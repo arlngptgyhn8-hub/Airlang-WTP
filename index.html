@@ -1,292 +1,426 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard Monitoring Kekeruhan Air</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WTP Airlangga | Industrial Monitoring</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      text-align: center;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
+    <style>
+        :root {
+            --primary-color: #2c3e50; /* Dark Blue Industrial */
+            --accent-color: #3498db;  /* Tech Blue */
+            --bg-color: #f4f6f9;      /* Light Grey Background */
+            --card-bg: #ffffff;
+            --text-color: #333;
+            
+            /* Status Colors */
+            --status-safe: #27ae60;   /* Green */
+            --status-warn: #f39c12;   /* Orange */
+            --status-danger: #c0392b; /* Red */
+        }
 
-    header {
-      background-color: #1e88e5;
-      color: white;
-      padding: 20px 0;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    h1 { margin: 0; font-size: 1.5rem; }
-    p.subtitle { margin: 5px 0 0; opacity: 0.8; font-size: 0.9rem; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            color: var(--text-color);
+            overflow: hidden; /* Mencegah scroll ganda */
+        }
 
-    /* LOGIN */
-    #loginSection {
-      display: flex;
-      flex: 1;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-    .login-card {
-      background: white;
-      padding: 40px;
-      border-radius: 15px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 350px;
-    }
-    .login-card input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    .login-card button {
-      width: 100%;
-      padding: 12px;
-      background-color: #1e88e5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    .login-card button:hover { background-color: #1565c0; }
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 250px;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar h2 { font-size: 1.2rem; margin-bottom: 40px; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .nav-item {
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .nav-item.active { background-color: var(--accent-color); font-weight: 600; }
+        .nav-item:hover { background-color: rgba(255,255,255,0.1); }
+        .sidebar-footer { margin-top: auto; font-size: 0.8rem; opacity: 0.7; }
 
-    #dashboardSection {
-      display: none;
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-      width: 100%;
-    }
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header h1 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+        .last-update { font-size: 0.9rem; color: #7f8c8d; }
 
-    .cards-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
+        /* --- LOGIN OVERLAY --- */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.95);
+            display: flex; justify-content: center; align-items: center; z-index: 999;
+        }
+        .login-box {
+            background: white; padding: 40px; border-radius: 12px;
+            width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .login-box input {
+            width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd;
+            border-radius: 6px; box-sizing: border-box;
+        }
+        .login-box button {
+            width: 100%; padding: 12px; background: var(--primary-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
 
-    .sensor-card {
-      background: white;
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-      text-align: left;
-      border-left: 5px solid #4e73df;
-    }
+        /* --- DASHBOARD GRID --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 Kolom */
+            gap: 25px;
+            margin-bottom: 25px;
+        }
 
-    .sensor-card h2 { margin: 0 0 10px; font-size: 1.1rem; color: #555; }
-    .value { font-size: 2.5rem; font-weight: bold; color: #333; }
-    .unit { font-size: 1rem; color: #888; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); }
 
-    .level-box {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      color: white;
-      font-weight: bold;
-    }
+        .card-header { font-size: 0.9rem; color: #7f8c8d; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; }
+        .card-value { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+        .card-unit { font-size: 1rem; color: #95a5a6; margin-left: 5px; }
 
-    .chart-container {
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-      margin-bottom: 20px;
-    }
+        /* Status Indicator Card */
+        #statusCard { border-left: 8px solid var(--status-safe); }
+        .status-badge {
+            display: inline-block; padding: 5px 15px; border-radius: 20px;
+            color: white; font-weight: 600; font-size: 0.9rem; margin-top: 5px;
+        }
 
-    .logout-btn {
-      background-color: #ff4757;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
+        /* Charts Layout */
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr; /* Gauge 1 bagian, History 2 bagian */
+            gap: 25px;
+        }
+        .chart-container { position: relative; height: 300px; width: 100%; }
 
-    footer {
-      padding: 20px;
-      font-size: 0.8rem;
-      color: #888;
-      margin-top: auto;
-    }
-  </style>
+        /* Gauge Specific */
+        .gauge-wrapper {
+            position: relative;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gauge-label-center {
+            position: absolute;
+            top: 60%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .gl-val { font-size: 2rem; font-weight: bold; display: block; }
+        .gl-unit { font-size: 0.9rem; color: #7f8c8d; }
+
+        /* Responsive Mobile */
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; overflow: auto; }
+            .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 10px 20px; justify-content: space-between; }
+            .sidebar h2 { margin: 0; font-size: 1rem; }
+            .sidebar nav, .sidebar-footer { display: none; }
+            .dashboard-grid, .chart-row { grid-template-columns: 1fr; }
+            .main-content { padding: 20px; }
+        }
+    </style>
 </head>
 <body>
 
-<header>
-  <h1>Dashboard Sensor Kekeruhan Air</h1>
-  <p class="subtitle">Realtime Monitoring (Turbidity)</p>
-</header>
-
-<!-- LOGIN -->
-<div id="loginSection">
-  <div class="login-card">
-    <h2>Login Dashboard</h2>
-    <input type="password" id="passInput" placeholder="Masukkan Password" />
-    <button id="btnLogin">Masuk</button>
-    <p id="loginError" style="color:red; display:none;">Password Salah!</p>
-  </div>
-</div>
-
-<!-- DASHBOARD -->
-<div id="dashboardSection">
-
-  <div class="cards-container">
-
-    <div class="sensor-card">
-      <h2>🌊 Nilai Kekeruhan</h2>
-      <span class="value" id="valKekeruhan">--</span> 
-      <span class="unit">NTU</span>
-
-      <div id="levelBox" class="level-box" style="background:#777;">
-        Level: -
-      </div>
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2 style="color:var(--primary-color); margin-top:0;">Secure Access</h2>
+            <p style="color:#7f8c8d; font-size:0.9rem;">WTP Airlangga Control Panel</p>
+            <input type="password" id="passInput" placeholder="Enter Admin Key">
+            <button id="btnLogin">AUTHENTICATE</button>
+            <p id="errMsg" style="color:red; font-size:0.8rem; margin-top:10px; display:none;">Access Denied</p>
+        </div>
     </div>
 
-  </div>
+    <aside class="sidebar">
+        <h2><i class="fas fa-water"></i> WTP AIRLANGGA</h2>
+        <nav>
+            <div class="nav-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</div>
+            <div class="nav-item" onclick="alert('Fitur Laporan dalam pengembangan')"><i class="fas fa-chart-line"></i> Laporan</div>
+            <div class="nav-item" onclick="alert('Fitur Pengaturan dalam pengembangan')"><i class="fas fa-cogs"></i> Pengaturan</div>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="location.reload()" style="margin-bottom:0; color:#e74c3c;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </div>
+            <br>System v2.0
+        </div>
+    </aside>
 
-  <div class="chart-container">
-    <canvas id="chartKekeruhan"></canvas>
-  </div>
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <h1>Turbidity Monitoring</h1>
+                <span class="last-update" id="timestamp">Waiting for data stream...</span>
+            </div>
+            <div style="text-align: right;">
+                <span style="background: #e1f5fe; color: #0288d1; padding: 8px 15px; border-radius: 6px; font-weight: 600;">
+                    <i class="fas fa-wifi"></i> ONLINE
+                </span>
+            </div>
+        </div>
 
-  <button class="logout-btn" id="btnLogout">Logout</button>
-</div>
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">Sensor Voltage</div>
+                <div>
+                    <span class="card-value" id="numVoltage">--</span>
+                    <span class="card-unit">Volt</span>
+                </div>
+            </div>
 
-<footer>
-  &copy; 2025 Airlangga • IoT Water Treatment System
-</footer>
+            <div class="card" id="statusCard">
+                <div class="card-header">Kondisi Air</div>
+                <h3 style="margin: 5px 0 10px 0; font-size: 1.4rem;" id="txtStatus">--</h3>
+                <span class="status-badge" id="badgeStatus" style="background:#ccc;">Loading</span>
+            </div>
 
-<!-- FIREBASE COMPAT -->
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+            <div class="card">
+                <div class="card-header">Deskripsi Sistem</div>
+                <p id="txtDesc" style="color: #555; font-size: 0.95rem; line-height: 1.5; margin: 5px 0;">
+                    Menunggu analisis data dari microcontroller...
+                </p>
+            </div>
+        </div>
 
-<script>
-  // =============================
-  // 1. FIREBASE CONFIG (PUNYA KAMU)
-  // =============================
-  const firebaseConfig = {
-    apiKey: "AIzaSyDOePB5A5tUFNf87LmS8NZo6zMa879LABE",
-    authDomain: "airlangga-wtp.firebaseapp.com",
-    databaseURL: "https://airlangga-wtp-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "airlangga-wtp",
-    storageBucket: "airlangga-wtp.firebasestorage.app",
-    messagingSenderId: "891310013164",
-    appId: "1:891310013164:web:2b243841c90387247d43c9"
-  };
+        <div class="chart-row">
+            
+            <div class="card">
+                <div class="card-header">Analog Meter</div>
+                <div class="gauge-wrapper">
+                    <canvas id="gaugeChart"></canvas>
+                    <div class="gauge-label-center">
+                        <span class="gl-val" id="gaugeVal">0.0</span>
+                        <span class="gl-unit">VDC</span>
+                    </div>
+                </div>
+            </div>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const auth = firebase.auth();
+            <div class="card">
+                <div class="card-header">Riwayat Kekeruhan (Real-time Trend)</div>
+                <div class="chart-container">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
 
-  // =============================
-  // 2. LOGIN
-  // =============================
-  const SIMPLE_PASSWORD = "admin";
+        </div>
+    </main>
 
-  btnLogin.onclick = () => {
-    const input = document.getElementById("passInput").value;
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 
-    if (input === SIMPLE_PASSWORD) {
-      auth.signInAnonymously().then(() => {
-        loginSection.style.display = "none";
-        dashboardSection.style.display = "block";
-        mulaiMonitoring();
-      });
-    } else {
-      loginError.style.display = "block";
-    }
-  };
+    <script>
+        // --- 1. FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOePB5A5tUFNf87LmS8NZo6zMa879LABE",
+            authDomain: "airlangga-wtp.firebaseapp.com",
+            databaseURL: "https://airlangga-wtp-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "airlangga-wtp",
+            storageBucket: "airlangga-wtp.firebasestorage.app",
+            messagingSenderId: "891310013164",
+            appId: "1:891310013164:web:2b243841c90387247d43c9"
+        };
 
-  btnLogout.onclick = () => { location.reload(); };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
 
-  // =============================
-  // 3. CHART
-  // =============================
-  const ctx = document.getElementById("chartKekeruhan").getContext("2d");
-  const chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: [],
-      datasets: [{
-        label: "Kekeruhan (NTU)",
-        data: [],
-        borderColor: "#1e88e5",
-        backgroundColor: "rgba(30,136,229,0.2)",
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: { responsive: true }
-  });
+        // --- 2. LOGIN SYSTEM ---
+        const btnLogin = document.getElementById('btnLogin');
+        const passInput = document.getElementById('passInput');
+        const overlay = document.getElementById('loginOverlay');
+        const errMsg = document.getElementById('errMsg');
 
-  // =============================
-  // 4. MONITORING DATA FIREBASE
-  // =============================
-  function mulaiMonitoring() {
-    const ref = db.ref("sensor/kekeruhan");
+        btnLogin.addEventListener('click', () => {
+            if(passInput.value === 'admin') {
+                auth.signInAnonymously().then(() => {
+                    overlay.style.display = 'none'; // Hide login
+                    initCharts(); // Start charts
+                    startDataStream(); // Start firebase listener
+                }).catch(e => {
+                    alert("Firebase Connection Error: " + e.message);
+                });
+            } else {
+                errMsg.style.display = 'block';
+            }
+        });
 
-    ref.on("value", snap => {
-      const val = snap.val();
+        // --- 3. CHART INITIALIZATION ---
+        let gaugeChart, historyChart;
 
-      if (!val) return;
+        function initCharts() {
+            // A. GAUGE CHART (Doughnut style)
+            const ctxGauge = document.getElementById('gaugeChart').getContext('2d');
+            gaugeChart = new Chart(ctxGauge, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Current', 'Max'],
+                    datasets: [{
+                        data: [0, 3.3],
+                        backgroundColor: ['#2c3e50', '#ecf0f1'],
+                        borderWidth: 0,
+                        circumference: 180, // Setengah lingkaran
+                        rotation: 270,      // Rotasi agar melengkung ke atas
+                        cutout: '80%'       // Ketebalan garis
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { tooltip: { enabled: false }, legend: { display: false } }
+                }
+            });
 
-      // Update angka
-      document.getElementById("valKekeruhan").innerText = val;
+            // B. HISTORY CHART (Line)
+            const ctxHist = document.getElementById('historyChart').getContext('2d');
+            
+            // Gradient fill effect
+            let gradient = ctxHist.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(52, 152, 219, 0.4)');
+            gradient.addColorStop(1, 'rgba(52, 152, 219, 0.0)');
 
-      // Update Level
-      updateLevel(val);
+            historyChart = new Chart(ctxHist, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Turbidity (Voltage)',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointRadius: 0, // Sembunyikan titik agar garis halus
+                        pointHoverRadius: 4,
+                        fill: true,
+                        tension: 0.4 // Smooth curve
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxTicksLimit: 5 } },
+                        y: { 
+                            beginAtZero: true, 
+                            max: 3.5,
+                            grid: { borderDash: [5, 5] }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
 
-      // Update grafik
-      addChart(val);
-    });
-  }
+        // --- 4. DATA PROCESSING ---
+        function startDataStream() {
+            const dataRef = db.ref('turbidity');
 
-  function updateLevel(ntu) {
-    const box = document.getElementById("levelBox");
+            dataRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                
+                if (data) {
+                    const voltage = parseFloat(data.voltage).toFixed(2);
+                    const status = data.status;
+                    const desc = data.description;
+                    const time = new Date().toLocaleTimeString();
 
-    let level = "";
-    let color = "";
+                    // Update Texts
+                    document.getElementById('numVoltage').innerText = voltage;
+                    document.getElementById('gaugeVal').innerText = voltage;
+                    document.getElementById('txtStatus').innerText = status;
+                    document.getElementById('badgeStatus').innerText = status.toUpperCase();
+                    document.getElementById('txtDesc').innerText = desc;
+                    document.getElementById('timestamp').innerText = "Last Update: " + time;
 
-    if (ntu <= 200) { level = "Jernih"; color = "#00b894"; }
-    else if (ntu <= 400) { level = "Sedang"; color = "#f9ca24"; }
-    else if (ntu <= 700) { level = "Keruh"; color = "#e17055"; }
-    else { level = "Sangat Keruh"; color = "#d63031"; }
+                    // Update UI Colors (Industrial Traffic Light Logic)
+                    updateUIColors(parseFloat(voltage));
 
-    box.style.background = color;
-    box.innerText = "Level: " + level;
-  }
+                    // Update Charts
+                    updateGauge(parseFloat(voltage));
+                    updateHistory(time, parseFloat(voltage));
+                }
+            });
+        }
 
-  function addChart(val) {
-    const time = new Date().toLocaleTimeString();
+        function updateUIColors(vol) {
+            const card = document.getElementById('statusCard');
+            const badge = document.getElementById('badgeStatus');
+            const root = document.documentElement;
 
-    chart.data.labels.push(time);
-    chart.data.datasets[0].data.push(val);
+            let color;
+            if (vol <= 0.5) color = getComputedStyle(root).getPropertyValue('--status-safe');
+            else if (vol <= 2.5) color = getComputedStyle(root).getPropertyValue('--status-warn');
+            else color = getComputedStyle(root).getPropertyValue('--status-danger');
 
-    if (chart.data.labels.length > 20) {
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
-    }
+            // Apply colors
+            card.style.borderLeftColor = color;
+            badge.style.backgroundColor = color;
+            
+            // Gauge color update
+            gaugeChart.data.datasets[0].backgroundColor[0] = color.trim();
+            gaugeChart.update();
+        }
 
-    chart.update();
-  }
-</script>
+        function updateGauge(val) {
+            // Data array: [Value, (Max(3.3) - Value)]
+            // Mencegah nilai negatif di chart jika sensor error
+            let remainder = 3.3 - val;
+            if (remainder < 0) remainder = 0;
 
+            gaugeChart.data.datasets[0].data = [val, remainder];
+            gaugeChart.update();
+        }
+
+        function updateHistory(label, val) {
+            // Add Data
+            historyChart.data.labels.push(label);
+            historyChart.data.datasets[0].data.push(val);
+
+            // Limit data points to keep browser fast (Max 30 points)
+            if (historyChart.data.labels.length > 30) {
+                historyChart.data.labels.shift();
+                historyChart.data.datasets[0].data.shift();
+            }
+            historyChart.update();
+        }
+
+    </script>
 </body>
 </html>
